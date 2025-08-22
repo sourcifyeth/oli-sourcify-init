@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 """
 SourceifyOLIBridge - Push verified smart contract labels from Sourcify to OLI
+Supports multiple data sources: Parquet files, Sourcify API, or direct database connection
 """
 
 import json
 import logging
 import os
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
+from pathlib import Path
 import requests
+import pandas as pd
+import pyarrow.parquet as pq
+import boto3
+from botocore.exceptions import NoCredentialsError
+from sqlalchemy import create_engine, text
+import pg8000
+from google.cloud.sql.connector import Connector, IPTypes
 from oli import OLI
 
 
