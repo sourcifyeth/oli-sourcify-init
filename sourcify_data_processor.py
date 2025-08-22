@@ -176,16 +176,16 @@ class SourcifyDataProcessor:
             
             -- Contract deployment info  
             cd.chain_id,
-            '0x' || encode(cd.address, 'hex') as address,
+            '0x' || hex(cd.address) as address,
             CASE 
                 WHEN cd.transaction_hash IS NOT NULL 
-                THEN '0x' || encode(cd.transaction_hash, 'hex')
+                THEN '0x' || hex(cd.transaction_hash)
                 ELSE NULL 
             END as deployment_tx,
             cd.block_number as deployment_block,
             CASE 
                 WHEN cd.deployer IS NOT NULL 
-                THEN '0x' || encode(cd.deployer, 'hex')
+                THEN '0x' || hex(cd.deployer)
                 ELSE NULL 
             END as deployer_address,
             
@@ -246,16 +246,16 @@ class SourcifyDataProcessor:
             
             -- Contract deployment info  
             cd.chain_id,
-            '0x' || encode(cd.address, 'hex') as address,
+            '0x' || hex(cd.address) as address,
             CASE 
                 WHEN cd.transaction_hash IS NOT NULL 
-                THEN '0x' || encode(cd.transaction_hash, 'hex')
+                THEN '0x' || hex(cd.transaction_hash)
                 ELSE NULL 
             END as deployment_tx,
             cd.block_number as deployment_block,
             CASE 
                 WHEN cd.deployer IS NOT NULL 
-                THEN '0x' || encode(cd.deployer, 'hex')
+                THEN '0x' || hex(cd.deployer)
                 ELSE NULL 
             END as deployer_address,
             
