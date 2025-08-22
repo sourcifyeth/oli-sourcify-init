@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Example usage of SourceifyOLIBridge
+Example usage of SourcifyOLIBridge
 """
 
 import os
 from dotenv import load_dotenv
-from sourcify_oli_bridge import SourceifyOLIBridge
+from sourcify_oli_bridge import SourcifyOLIBridge
 
 def main():
     # Load environment variables
@@ -23,14 +23,14 @@ def main():
         print("Copy .env.example to .env and fill in your private key")
         return
     
-    print(f"Initializing SourceifyOLIBridge...")
+    print(f"Initializing SourcifyOLIBridge...")
     print(f"- Production mode: {use_production}")
     print(f"- Chain ID: {chain_id}")
     print(f"- Batch size: {batch_size}")
     print(f"- Delay: {delay}s")
     
     # Initialize bridge
-    bridge = SourceifyOLIBridge(private_key, is_production=use_production)
+    bridge = SourcifyOLIBridge(private_key, is_production=use_production)
     
     # Example 1: Process a single contract
     print("\n=== Example 1: Single Contract ===")

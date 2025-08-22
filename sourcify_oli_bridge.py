@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SourceifyOLIBridge - Push verified smart contract labels from Sourcify to OLI
+SourcifyOLIBridge - Push verified smart contract labels from Sourcify to OLI
 Supports multiple data sources: Parquet files, Sourcify API, or direct database connection
 """
 
@@ -21,7 +21,7 @@ from google.cloud.sql.connector import Connector, IPTypes
 from oli import OLI
 
 
-class SourceifyOLIBridge:
+class SourcifyOLIBridge:
     """Bridge to push Sourcify verified contracts to OLI with specific tags."""
     
     def __init__(self, private_key: str, is_production: bool = True):
@@ -38,7 +38,7 @@ class SourceifyOLIBridge:
         
     def _setup_logger(self) -> logging.Logger:
         """Setup logging configuration."""
-        logger = logging.getLogger('SourceifyOLIBridge')
+        logger = logging.getLogger('SourcifyOLIBridge')
         logger.setLevel(logging.INFO)
         if not logger.handlers:
             handler = logging.StreamHandler()
@@ -262,7 +262,7 @@ class SourceifyOLIBridge:
 
 
 def main():
-    """Example usage of SourceifyOLIBridge."""
+    """Example usage of SourcifyOLIBridge."""
     
     # Get private key from environment
     private_key = os.getenv('OLI_PRIVATE_KEY')
@@ -271,7 +271,7 @@ def main():
         return
     
     # Initialize bridge
-    bridge = SourceifyOLIBridge(private_key, is_production=False)  # Use testnet for testing
+    bridge = SourcifyOLIBridge(private_key, is_production=False)  # Use testnet for testing
     
     # Process some contracts from Ethereum mainnet
     successful, total = bridge.process_batch(

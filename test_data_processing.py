@@ -6,7 +6,7 @@ Test the data processing pipeline
 import os
 import sys
 import pandas as pd
-from sourcify_data_processor import SourceifyDataProcessor, check_virtual_environment
+from sourcify_data_processor import SourcifyDataProcessor, check_virtual_environment
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
     
     print("Testing Sourcify Data Processing with DuckDB...")
     
-    processor = SourceifyDataProcessor()
+    processor = SourcifyDataProcessor()
     
     try:
         # Step 1: Load manifest and setup

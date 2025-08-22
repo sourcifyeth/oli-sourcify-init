@@ -105,12 +105,12 @@ export OLI_PRIVATE_KEY="your_private_key_here"
 
 # Step 3: Process contracts and submit to OLI
 python -c "
-from sourcify_data_processor import SourceifyDataProcessor
+from sourcify_data_processor import SourcifyDataProcessor
 from oli_submitter import OLISubmitter
 import os
 
 # Initialize both modules
-processor = SourceifyDataProcessor()
+processor = SourcifyDataProcessor()
 submitter = OLISubmitter(os.getenv('OLI_PRIVATE_KEY'), is_production=False)
 
 # Process contracts in batches

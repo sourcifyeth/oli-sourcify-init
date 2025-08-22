@@ -47,7 +47,7 @@ def check_virtual_environment():
             sys.exit(1)
 
 
-class SourceifyDataProcessor:
+class SourcifyDataProcessor:
     """Process Sourcify parquet exports to extract contract data for OLI tagging."""
     
     def __init__(self, base_url: str = "https://export.sourcify.dev"):
@@ -68,7 +68,7 @@ class SourceifyDataProcessor:
         
     def _setup_logger(self) -> logging.Logger:
         """Setup logging configuration."""
-        logger = logging.getLogger('SourceifyDataProcessor')
+        logger = logging.getLogger('SourcifyDataProcessor')
         logger.setLevel(logging.INFO)
         if not logger.handlers:
             handler = logging.StreamHandler()
@@ -372,9 +372,9 @@ class SourceifyDataProcessor:
 
 
 def main():
-    """Example usage of SourceifyDataProcessor."""
+    """Example usage of SourcifyDataProcessor."""
     check_virtual_environment()
-    processor = SourceifyDataProcessor()
+    processor = SourcifyDataProcessor()
     
     try:
         # Get manifest and setup views
