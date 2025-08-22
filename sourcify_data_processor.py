@@ -286,7 +286,7 @@ class SourcifyDataProcessor:
             
     def get_chain_statistics(self) -> pd.DataFrame:
         """
-        Get statistics about contracts per chain.
+        Get basic statistics about contracts per chain (simplified for performance).
         
         Returns:
             DataFrame with chain statistics
@@ -294,25 +294,82 @@ class SourcifyDataProcessor:
         query = """
         SELECT 
             cd.chain_id,
-            COUNT(*) as contract_count,
-            COUNT(CASE WHEN cd.transaction_hash IS NOT NULL THEN 1 END) as contracts_with_tx,
-            COUNT(CASE WHEN cd.deployer IS NOT NULL THEN 1 END) as contracts_with_deployer,
-            MIN(vc.created_at) as first_verified,
-            MAX(vc.created_at) as last_verified
+            COUNT(*) as contract_count
         FROM verified_contracts vc
         JOIN contract_deployments cd ON vc.deployment_id = cd.id
         WHERE cd.chain_id IS NOT NULL
         GROUP BY cd.chain_id
         ORDER BY contract_count DESC
+        LIMIT 50
         """
         
         try:
             result = self.conn.execute(query).df()
-            self.logger.info(f"Retrieved statistics for {len(result)} chains")
+            self.logger.info(f"Retrieved statistics for top {len(result)} chains")
             return result
         except Exception as e:
             self.logger.error(f"Failed to get chain statistics: {e}")
             raise
+            
+    def debug_chain_data(self) -> Dict:
+        """
+        Debug function to understand the data better.
+        
+        Returns:
+            Dictionary with debug information
+        """
+        debug_info = {}
+        
+        try:
+            # Total verified contracts
+            total_verified = self.conn.execute("SELECT COUNT(*) FROM verified_contracts").fetchone()[0]
+            debug_info['total_verified_contracts'] = total_verified
+            
+            # Total deployments
+            total_deployments = self.conn.execute("SELECT COUNT(*) FROM contract_deployments").fetchone()[0]
+            debug_info['total_deployments'] = total_deployments
+            
+            # Unique chains in deployments
+            unique_chains = self.conn.execute("""
+                SELECT COUNT(DISTINCT chain_id) 
+                FROM contract_deployments 
+                WHERE chain_id IS NOT NULL
+            """).fetchone()[0]
+            debug_info['unique_chains_in_deployments'] = unique_chains
+            
+            # Check for NULL chain_ids
+            null_chains = self.conn.execute("""
+                SELECT COUNT(*) 
+                FROM contract_deployments 
+                WHERE chain_id IS NULL
+            """).fetchone()[0]
+            debug_info['deployments_with_null_chain_id'] = null_chains
+            
+            # Sample of all chain IDs (even rare ones)
+            all_chains = self.conn.execute("""
+                SELECT chain_id, COUNT(*) as count 
+                FROM contract_deployments 
+                WHERE chain_id IS NOT NULL
+                GROUP BY chain_id 
+                ORDER BY count DESC
+            """).df()
+            debug_info['all_chains_count'] = len(all_chains)
+            debug_info['all_chains_sample'] = all_chains
+            
+            # Check join success rate
+            successful_joins = self.conn.execute("""
+                SELECT COUNT(*) 
+                FROM verified_contracts vc
+                JOIN contract_deployments cd ON vc.deployment_id = cd.id
+                WHERE cd.chain_id IS NOT NULL
+            """).fetchone()[0]
+            debug_info['successful_joins'] = successful_joins
+            
+            return debug_info
+            
+        except Exception as e:
+            self.logger.error(f"Debug query failed: {e}")
+            return {'error': str(e)}
             
     def process_all_contracts(self, batch_size: int = 100000) -> Iterator[pd.DataFrame]:
         """

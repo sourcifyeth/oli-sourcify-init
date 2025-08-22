@@ -33,22 +33,41 @@ def main():
         total_contracts = processor.get_contract_count()
         print(f"   ✓ Total verified contracts: {total_contracts:,}")
         
-        # Step 4: Chain statistics
-        print("\n4. Chain statistics:")
-        chain_stats = processor.get_chain_statistics()
-        print(chain_stats.head().to_string(index=False))
+        # Step 4: Debug data first
+        print("\n4. Debug Information:")
+        debug_info = processor.debug_chain_data()
         
-        # Step 5: Preview OLI data structure
-        print("\n5. Preview OLI data structure:")
+        for key, value in debug_info.items():
+            if key == 'all_chains_sample' and hasattr(value, 'shape'):
+                print(f"   {key}: {value.shape[0]} total chains")
+                print("   Top 10 chains:")
+                # Add indentation manually
+                chain_table = value.head(10).to_string(index=False)
+                for line in chain_table.split('\n'):
+                    print(f"     {line}")
+            else:
+                print(f"   {key}: {value}")
+        
+        # Step 5: Chain statistics from join
+        print("\n5. Chain Statistics (from join):")
+        chain_stats = processor.get_chain_statistics()
+        print(f"   Showing {len(chain_stats)} out of {debug_info.get('all_chains_count', 'unknown')} total chains")
+        # Add indentation manually
+        stats_table = chain_stats.head(10).to_string(index=False)
+        for line in stats_table.split('\n'):
+            print(f"   {line}")
+        
+        # Step 6: Preview OLI data structure
+        print("\n6. Preview OLI data structure:")
         processor.preview_oli_data(2)
         
-        # Step 6: Process a test batch
-        print("\n6. Processing test batch...")
+        # Step 7: Process a test batch
+        print("\n7. Processing test batch...")
         test_batch = processor.process_contracts_batch(batch_size=5000, offset=0)
         print(f"   ✓ Successfully processed {len(test_batch)} contracts")
         
-        # Step 7: Show data quality
-        print("\n7. Data completeness analysis:")
+        # Step 8: Show data quality
+        print("\n8. Data completeness analysis:")
         completeness = {
             'total_contracts': len(test_batch),
             'with_deployment_tx': test_batch['deployment_tx'].notna().sum(),
@@ -65,8 +84,8 @@ def main():
                 percentage = (value / completeness['total_contracts']) * 100
                 print(f"   • {key}: {value:,} ({percentage:.1f}%)")
                 
-        # Step 8: Show sample data
-        print(f"\n8. Sample contract data:")
+        # Step 9: Show sample data
+        print(f"\n9. Sample contract data:")
         sample = test_batch.head(3)
         for idx, row in sample.iterrows():
             print(f"\n   Contract {idx + 1}:")
