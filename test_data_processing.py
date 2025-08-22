@@ -57,9 +57,9 @@ def main():
         for line in stats_table.split('\n'):
             print(f"   {line}")
         
-        # Step 6: Preview OLI data structure
-        print("\n6. Preview OLI data structure:")
-        processor.preview_oli_data(2)
+        # # Step 6: Preview OLI data structure
+        # print("\n6. Preview OLI data structure:")
+        # processor.preview_oli_data(2)
         
         # Step 7: Process a test batch
         print("\n7. Processing test batch...")
