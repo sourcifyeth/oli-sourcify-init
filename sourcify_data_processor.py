@@ -129,11 +129,12 @@ class SourcifyDataProcessor:
                 self.logger.warning(f"No files found for table '{table_name}'")
                 continue
                 
-            # Create file pattern for DuckDB
-            file_pattern = f"'{self.base_url}/{table_name}/*.parquet'"
+            # Create list of full URLs for each file
+            file_urls = [f"'{self.base_url}/{file_path}'" for file_path in files]
+            file_list = '[' + ', '.join(file_urls) + ']'
             
-            # Create view
-            view_sql = f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM {file_pattern}"
+            # Create view using list of specific files
+            view_sql = f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_parquet({file_list})"
             
             try:
                 self.conn.execute(view_sql)
