@@ -218,7 +218,8 @@ def test_oli_submitter_integration(processor: LocalSourcifyProcessor) -> bool:
             return False
             
         # Test OLI tag formatting (without submitting)
-        oli_submitter = OLISubmitter()
+        dummy_key = "0x" + "1" * 64  # Valid format but dummy key
+        oli_submitter = OLISubmitter(private_key=dummy_key, is_production=False)
         
         # Convert first contract to OLI format
         first_contract = test_batch.iloc[0]
@@ -233,8 +234,9 @@ def test_oli_submitter_integration(processor: LocalSourcifyProcessor) -> bool:
             'deployer_address': first_contract.get('deployer_address')
         }
         
-        # Validate tag format
-        valid_tags = oli_submitter.validate_tags(oli_tags)
+        # Validate tag format  
+        oli_chain_id = f"eip155:{first_contract.get('chain_id')}"
+        valid_tags = oli_submitter.validate_submission(first_contract.get('address'), oli_chain_id, oli_tags)
         
         print(f"✓ OLI tag validation successful")
         print(f"   Valid tags: {sum(1 for v in oli_tags.values() if v is not None)}/7")
@@ -384,7 +386,7 @@ def main():
     if success:
         print(f"\n✅ Ready for production! Next steps:")
         print("1. Set OLI_PRIVATE_KEY environment variable")
-        print("2. Run: python main_oli_processor.py")
+        print("2. Run: python main.py")
         sys.exit(0)
     else:
         print(f"\n❌ Tests failed. Fix issues before proceeding.")

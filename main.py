@@ -10,6 +10,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Dict, Any
+from dotenv import load_dotenv
 
 from local_data_processor import LocalSourcifyProcessor, check_virtual_environment
 from oli_submitter import OLISubmitter
@@ -17,10 +18,13 @@ from oli_submitter import OLISubmitter
 
 def get_config() -> Dict[str, Any]:
     """Get configuration from environment variables."""
+    # Load environment variables from .env file
+    load_dotenv()
+    
     config = {
         'oli_private_key': os.getenv('OLI_PRIVATE_KEY'),
         'use_production': os.getenv('USE_PRODUCTION', 'false').lower() == 'true',
-        'batch_size': int(os.getenv('BATCH_SIZE', '1000')),
+        'batch_size': int(os.getenv('DEFAULT_BATCH_SIZE', '1000')),
         'submission_delay': float(os.getenv('SUBMISSION_DELAY', '1.0')),
         'submit_onchain': os.getenv('SUBMIT_ONCHAIN', 'false').lower() == 'true',
         'data_dir': os.getenv('DATA_DIR', './sourcify_data'),

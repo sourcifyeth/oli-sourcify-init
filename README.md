@@ -55,25 +55,15 @@ Push verified smart contract labels from Sourcify to the Open Labels Initiative 
 ## Testing
 
 **Run comprehensive tests:**
-
 ```bash
 python test_local_processing.py
 ```
-
-Tests validate:
-
-- Data availability and integrity
-- DuckDB join performance
-- OLI tag generation quality
-- Batch processing functionality
-- Integration with OLI submitter
+Tests validate data integrity, joins, OLI tag generation, and full pipeline functionality.
 
 **Quick processor test:**
-
 ```bash
-python local_data_processor.py
+python local_data_processor.py  
 ```
-
 Shows data statistics, join results, and OLI tag preview.
 
 ## Configuration
@@ -83,7 +73,7 @@ Shows data statistics, join results, and OLI tag preview.
 
 **Optional:**
 - `USE_PRODUCTION="true"` - Use Base Mainnet (default: Base Sepolia testnet)
-- `BATCH_SIZE="5000"` - Contracts per batch (default: 1000)
+- `DEFAULT_BATCH_SIZE="5000"` - Contracts per batch (default: 1000)  
 - `SUBMISSION_DELAY="0.5"` - Delay between submissions in seconds (default: 1.0)
 - `SUBMIT_ONCHAIN="true"` - Submit onchain (costs gas, default: false)
 - `DATA_DIR="./my_data"` - Data directory path (default: ./sourcify_data)
@@ -95,7 +85,7 @@ Shows data statistics, join results, and OLI tag preview.
 export OLI_PRIVATE_KEY="your_private_key"
 export USE_PRODUCTION="true"
 export SUBMIT_ONCHAIN="true"
-export BATCH_SIZE="2000"
+export DEFAULT_BATCH_SIZE="2000"
 python main.py
 ```
 

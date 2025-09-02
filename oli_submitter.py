@@ -13,6 +13,7 @@ import sys
 import time
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
+from dotenv import load_dotenv
 from oli import OLI
 
 
@@ -222,6 +223,87 @@ class OLISubmitter:
         self.logger.info(f"Starting batch submission: {total} contracts "
                         f"({'onchain' if submit_onchain else 'offchain'})")
         
+        if submit_onchain and total > 1:
+            # Use efficient batch onchain submission for multiple contracts
+            return self._submit_batch_onchain(contracts_df)
+        else:
+            # Use individual submissions for offchain or single contracts
+            return self._submit_batch_individual(contracts_df, submit_onchain, delay)
+    
+    def _submit_batch_onchain(self, contracts_df: pd.DataFrame) -> Tuple[int, int]:
+        """
+        Submit batch of contracts using OLI's multi-onchain submission method.
+        
+        Args:
+            contracts_df: DataFrame with contract data
+            
+        Returns:
+            Tuple of (successful_count, total_count)
+        """
+        total = len(contracts_df)
+        
+        # Prepare labels for batch submission
+        labels = []
+        valid_contracts = 0
+        
+        for idx, row in contracts_df.iterrows():
+            try:
+                address = str(row['address'])
+                chain_id = self.format_chain_id_for_oli(int(row['chain_id']))
+                tags = self.prepare_oli_tags(row.to_dict())
+                
+                # Validate before adding to batch
+                if self.validate_submission(address, chain_id, tags):
+                    labels.append({
+                        'address': address,
+                        'chain_id': chain_id, 
+                        'tags': tags
+                    })
+                    valid_contracts += 1
+                else:
+                    self.logger.warning(f"Skipping invalid contract {address}")
+                    
+            except Exception as e:
+                self.logger.error(f"Error preparing contract at index {idx}: {e}")
+        
+        if not labels:
+            self.logger.warning("No valid contracts to submit")
+            return 0, total
+            
+        self.logger.info(f"Submitting {len(labels)} contracts in single onchain batch")
+        
+        try:
+            # Submit entire batch in one transaction
+            tx_hash, uids = self.oli.submit_multi_onchain_labels(labels)
+            successful = len(uids) if uids else 0
+            
+            self.logger.info(f"Batch onchain submission successful: tx={tx_hash}")
+            self.logger.info(f"Generated {successful} UIDs for {len(labels)} labels")
+            
+            return successful, total
+            
+        except Exception as e:
+            self.logger.error(f"Batch onchain submission failed: {e}")
+            # Fallback to individual submissions
+            self.logger.info("Falling back to individual submissions...")
+            return self._submit_batch_individual(contracts_df, True, 1.0)
+    
+    def _submit_batch_individual(self, contracts_df: pd.DataFrame, submit_onchain: bool, 
+                                delay: float) -> Tuple[int, int]:
+        """
+        Submit contracts individually (used for offchain or fallback).
+        
+        Args:
+            contracts_df: DataFrame with contract data
+            submit_onchain: Whether to submit onchain
+            delay: Delay between submissions
+            
+        Returns:
+            Tuple of (successful_count, total_count)  
+        """
+        successful = 0
+        total = len(contracts_df)
+        
         for idx, row in contracts_df.iterrows():
             try:
                 if self.submit_contract(row.to_dict(), submit_onchain):
@@ -239,7 +321,7 @@ class OLISubmitter:
                 self.logger.info(f"Progress: {idx + 1}/{total} contracts processed "
                                f"({successful} successful)")
         
-        self.logger.info(f"Batch submission complete: {successful}/{total} successful")
+        self.logger.info(f"Individual submission complete: {successful}/{total} successful")
         return successful, total
         
     def test_single_submission(self, address: str, chain_id: int, 
@@ -319,6 +401,9 @@ class OLISubmitter:
 def main():
     """Example usage of OLISubmitter."""
     check_virtual_environment()
+    
+    # Load environment variables from .env file
+    load_dotenv()
     
     # Example with environment variable
     private_key = os.getenv('OLI_PRIVATE_KEY')
