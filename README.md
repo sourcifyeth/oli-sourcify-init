@@ -38,27 +38,15 @@ Push verified smart contract labels from Sourcify to the Open Labels Initiative 
    python test_local_processing.py
    ```
 
-4. **Configure OLI and submit:**
-
+4. **Configure OLI and process all contracts:**
    ```bash
    export OLI_PRIVATE_KEY="your_private_key_here"
-   python -c "
-   from local_data_processor import LocalSourcifyProcessor
-   from oli_submitter import OLISubmitter
-   import os
-
-   processor = LocalSourcifyProcessor()
-   submitter = OLISubmitter(os.getenv('OLI_PRIVATE_KEY'), is_production=False)
-
-   # Process all contracts in batches
-   for batch in processor.process_all_contracts(batch_size=1000):
-       successful, total = submitter.submit_batch(batch, submit_onchain=False, delay=1.0)
-       print(f'Batch: {successful}/{total} successful')
-   "
+   python main.py
    ```
 
 ## Components
 
+- **`main.py`** - Main entry point for processing all contracts
 - **`download_parquet_files.py`** - Downloads Sourcify Parquet exports locally
 - **`local_data_processor.py`** - Processes local files with DuckDB for efficient joins
 - **`test_local_processing.py`** - Comprehensive test suite
@@ -91,12 +79,31 @@ Shows data statistics, join results, and OLI tag preview.
 ## Configuration
 
 **Required:**
-
 - `OLI_PRIVATE_KEY` - Your private key (wallet must have ETH on Base)
 
 **Optional:**
-
 - `USE_PRODUCTION="true"` - Use Base Mainnet (default: Base Sepolia testnet)
+- `BATCH_SIZE="5000"` - Contracts per batch (default: 1000)
+- `SUBMISSION_DELAY="0.5"` - Delay between submissions in seconds (default: 1.0)
+- `SUBMIT_ONCHAIN="true"` - Submit onchain (costs gas, default: false)
+- `DATA_DIR="./my_data"` - Data directory path (default: ./sourcify_data)
+
+## Production Usage
+
+**For production (Base Mainnet) with onchain attestations:**
+```bash
+export OLI_PRIVATE_KEY="your_private_key"
+export USE_PRODUCTION="true"
+export SUBMIT_ONCHAIN="true"
+export BATCH_SIZE="2000"
+python main.py
+```
+
+**For testnet (Base Sepolia) with free offchain submissions:**
+```bash
+export OLI_PRIVATE_KEY="your_private_key"
+python main.py
+```
 
 ## How It Works
 
