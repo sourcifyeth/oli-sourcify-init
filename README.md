@@ -1,207 +1,116 @@
 # Sourcify OLI Bridge
 
-Push verified smart contract labels from Sourcify to the Open Labels Initiative (OLI) using their Python SDK. Supports processing 8.8+ million verified contracts efficiently using DuckDB and Parquet exports.
+> ⚠️ **This README and the code is AI-generated**
 
-## Overview
+Push verified smart contract labels from Sourcify to the Open Labels Initiative (OLI). Processes 8.8+ million verified contracts efficiently using locally downloaded Parquet files and DuckDB.
 
-This tool processes verified smart contracts from Sourcify and submits them to OLI with the following tags:
+## OLI Tags Generated
+
 - `source_code_verified`: "sourcify"
-- `code_language`: Detected from compiler (solidity, vyper, etc.)
-- `code_compiler`: Compiler version used
-- `deployment_block`: Block number where contract was deployed
-- `deployment_tx`: Transaction hash that deployed the contract
-- `is_contract`: Always true for verified contracts
-- `deployer_address`: Address that deployed the contract
+- `is_contract`: true
+- `code_language`: solidity, vyper, etc.
+- `code_compiler`: compiler version used
+- `deployment_block`: deployment block number
+- `deployment_tx`: deployment transaction hash
+- `deployer_address`: deployer address
 
-## Architecture
+## Quick Start
 
-**Two-module design for scalability:**
+1. **Setup environment:**
 
-1. **Data Processing** (`sourcify_data_processor.py`): Uses DuckDB to efficiently process Sourcify's Parquet exports
-2. **OLI Submission** (`oli_submitter.py`): Handles validation and submission to OLI platform
-
-## Quick Setup
-
-### Option 1: Automated Setup
-```bash
-# Clone and setup everything
-git clone <repository>
-cd oli-sourcify-labels
-./setup.sh
-```
-
-### Option 2: Manual Setup
-
-1. **Clone and create virtual environment:**
    ```bash
    git clone <repository>
    cd oli-sourcify-labels
    python3 -m venv venv
    source venv/bin/activate
-   ```
-
-2. **Install dependencies:**
-   ```bash
    pip install -r requirements.txt
    ```
 
-3. **Set up environment variables:**
+2. **Download Sourcify data (~10-15GB):**
+
    ```bash
-   cp .env.example .env
-   # Edit .env with your OLI private key
+   python download_parquet_files.py
    ```
 
-## Testing the Data Processing
+3. **Test the pipeline:**
 
-Test the DuckDB data processing (no OLI credentials needed):
+   ```bash
+   python test_local_processing.py
+   ```
 
-```bash
-# Activate virtual environment
-source venv/bin/activate
+4. **Configure OLI and submit:**
 
-# Test data processing pipeline
-python test_data_processing.py
-```
+   ```bash
+   export OLI_PRIVATE_KEY="your_private_key_here"
+   python -c "
+   from local_data_processor import LocalSourcifyProcessor
+   from oli_submitter import OLISubmitter
+   import os
 
-This will:
-- Connect to Sourcify's public parquet exports
-- Process sample verified contracts
-- Show data quality statistics
-- Preview OLI tag structure
+   processor = LocalSourcifyProcessor()
+   submitter = OLISubmitter(os.getenv('OLI_PRIVATE_KEY'), is_production=False)
 
-## Data Sources
+   # Process all contracts in batches
+   for batch in processor.process_all_contracts(batch_size=1000):
+       successful, total = submitter.submit_batch(batch, submit_onchain=False, delay=1.0)
+       print(f'Batch: {successful}/{total} successful')
+   "
+   ```
 
-The tool supports multiple data sources for different use cases:
+## Components
 
-### 1. Parquet Files (Recommended for Bulk Processing)
-- **Source**: Sourcify's public Parquet exports via Cloudflare R2
-- **URL**: https://export.sourcify.dev/
-- **Advantages**: No rate limits, processes 8.8M+ contracts efficiently
-- **Memory Usage**: ~1GB RAM using DuckDB
-- **Best for**: Initial bulk processing of all historical contracts
+- **`download_parquet_files.py`** - Downloads Sourcify Parquet exports locally
+- **`local_data_processor.py`** - Processes local files with DuckDB for efficient joins
+- **`test_local_processing.py`** - Comprehensive test suite
+- **`oli_submitter.py`** - Handles OLI validation and submission
 
-### 2. Sourcify API (for Incremental Updates)
-- **Source**: Sourcify REST API
-- **Advantages**: Real-time data, good for ongoing updates
-- **Limitations**: Rate limited, not suitable for bulk processing
-- **Best for**: Processing new contracts after bulk import
+## Testing
 
-### 3. Direct Database Connection (Advanced)
-- **Source**: Direct PostgreSQL connection to Sourcify database
-- **Requirements**: Google Cloud deployment or VPN access
-- **Best for**: Real-time processing at scale
-
-## Complete Pipeline Example
+**Run comprehensive tests:**
 
 ```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Step 1: Test data processing (no credentials needed)
-python test_data_processing.py
-
-# Step 2: Set up OLI credentials
-export OLI_PRIVATE_KEY="your_private_key_here"
-
-# Step 3: Process contracts and submit to OLI
-python -c "
-from sourcify_data_processor import SourcifyDataProcessor
-from oli_submitter import OLISubmitter
-import os
-
-# Initialize both modules
-processor = SourcifyDataProcessor()
-submitter = OLISubmitter(os.getenv('OLI_PRIVATE_KEY'), is_production=False)
-
-# Process contracts in batches
-for batch in processor.process_all_contracts(batch_size=1000):
-    successful, total = submitter.submit_batch(batch, submit_onchain=False, delay=1.0)
-    print(f'Batch complete: {successful}/{total} successful submissions')
-"
+python test_local_processing.py
 ```
+
+Tests validate:
+
+- Data availability and integrity
+- DuckDB join performance
+- OLI tag generation quality
+- Batch processing functionality
+- Integration with OLI submitter
+
+**Quick processor test:**
+
+```bash
+python local_data_processor.py
+```
+
+Shows data statistics, join results, and OLI tag preview.
 
 ## Configuration
 
-### Required Environment Variables
+**Required:**
 
-- `OLI_PRIVATE_KEY`: Your private key for OLI authentication (wallet must contain ETH on Base)
+- `OLI_PRIVATE_KEY` - Your private key (wallet must have ETH on Base)
 
-### Optional Environment Variables
+**Optional:**
 
-- `USE_PRODUCTION`: Set to "true" for Base Mainnet, "false" for Base Sepolia Testnet (default: false)
-- `DEFAULT_CHAIN_ID`: Chain ID to process (default: "1" for Ethereum mainnet)
-- `DEFAULT_BATCH_SIZE`: Number of contracts to process in batch mode (default: 100)
-- `SUBMISSION_DELAY`: Delay between submissions in seconds (default: 1.0)
-- `SOURCIFY_API_URL`: Sourcify API URL (default: https://sourcify.dev/server)
+- `USE_PRODUCTION="true"` - Use Base Mainnet (default: Base Sepolia testnet)
 
-## Virtual Environment Protection
+## How It Works
 
-All Python scripts include virtual environment detection and will warn you if not running in a virtual environment:
+1. **Downloads** all Sourcify Parquet files (~10-15GB) to `./sourcify_data/`
+2. **Joins** 3 tables locally using DuckDB hash tables:
+   - `verified_contracts` ⟵⟶ `contract_deployments`
+   - `verified_contracts` ⟵⟶ `compiled_contracts`
+3. **Processes** contracts in batches with OLI tag generation
+4. **Submits** to OLI platform (offchain free, onchain requires gas)
 
-```bash
-# If you run without venv, you'll see:
-⚠️  WARNING: Not running in a virtual environment!
-   It's recommended to use a virtual environment to avoid dependency conflicts.
-   Setup instructions:
-   1. python3 -m venv venv
-   2. source venv/bin/activate
-   3. pip install -r requirements.txt
-   4. python test_data_processing.py
+**Performance:** ~1GB RAM, processes millions of contracts efficiently without API rate limits.
 
-Continue anyway? [y/N]:
-```
+## Data Schema
 
-This prevents accidental global package installation and dependency conflicts.
-
-## Submission Types
-
-- **Offchain**: Free submissions stored in OLI database
-- **Onchain**: Requires ETH for gas, creates attestations on Base blockchain
-
-## Supported Chains
-
-The tool can process verified contracts from any chain supported by Sourcify. Common chains:
-- Ethereum Mainnet (1)
-- Polygon (137) 
-- Arbitrum (42161)
-- Optimism (10)
-- And many more...
-
-## Rate Limiting
-
-The tool includes configurable delays between submissions to avoid overwhelming APIs. Adjust `SUBMISSION_DELAY` as needed.
-
-## Error Handling
-
-- Logs all operations with detailed error messages
-- Validates tags before submission using OLI SDK
-- Graceful handling of missing metadata or creation info
-- Continues processing batch even if individual contracts fail
-
-## Development
-
-### Tag Mapping Logic
-
-The tool maps Sourcify contract data to OLI tags as follows:
-
-```python
-{
-    "source_code_verified": "sourcify",  # Always sourcify
-    "is_contract": True,                 # Always true for verified contracts
-    "code_language": "solidity",         # Detected from compiler info
-    "code_compiler": "solc-0.8.19",     # Extracted from metadata
-    "deployment_block": 18500000,        # From creation info API
-    "deployment_tx": "0x1234...",        # From creation info API
-    "deployer_address": "0x5678..."      # From creation info API
-}
-```
-
-### API Endpoints Used
-
-- `GET /contracts/full_match/{chainId}` - List verified contracts
-- `GET /repository/contracts/full_match/{chainId}/{address}/metadata.json` - Contract metadata
-- `GET /contracts/{chainId}/{address}/creation-info` - Deployment information
-
-## License
-
-MIT License
+- **verified_contracts**: `id`, `deployment_id`, `compilation_id`, `created_at`
+- **contract_deployments**: `id`, `chain_id`, `address`, `transaction_hash`, `block_number`, `deployer`
+- **compiled_contracts**: `id`, `language`, `compiler`, `version`
