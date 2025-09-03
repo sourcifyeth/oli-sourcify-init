@@ -322,7 +322,7 @@ class OLISubmitter:
             total
         )
         
-        self.logger.info(f"Submitting {total} contracts with {max_workers} parallel workers")
+        self.logger.info(f"Starting parallel offchain submission: {total} contracts with {max_workers} workers")
         
         successful = 0
         failed_contracts = []
@@ -344,7 +344,7 @@ class OLISubmitter:
                 for idx, row in contracts_df.iterrows()
             }
             
-            # Process completed submissions
+            # Process completed submissions with speed tracking
             for future in concurrent.futures.as_completed(future_to_contract):
                 contract_idx = future_to_contract[future]
                 try:
@@ -356,17 +356,22 @@ class OLISubmitter:
                     failed_contracts.append(contract_idx)
                     self.logger.error(f"Exception in parallel submission: {e}")
                 
-                # Progress reporting
+                # Progress reporting with speed tracking
                 completed = successful + len(failed_contracts)
-                if completed % 50 == 0 or completed == total:
-                    self.logger.info(f"Progress: {completed}/{total} contracts "
-                                   f"({successful} successful, {len(failed_contracts)} failed)")
+                elapsed = time.time() - start_time
+                rate = completed / elapsed if elapsed > 0 else 0
+                
+                # Log progress at regular intervals
+                progress_interval = min(max(total // 10, 1), 100)
+                if completed % progress_interval == 0 or completed == total:
+                    self.logger.info(f"Progress: {completed}/{total} ({completed/total*100:.1f}%) - "
+                                   f"{rate:.1f} submissions/sec ({successful} successful, {len(failed_contracts)} failed)")
         
         duration = time.time() - start_time
-        rate = total / duration if duration > 0 else 0
+        final_rate = total / duration if duration > 0 else 0
         
-        self.logger.info(f"Parallel offchain submission complete: {successful}/{total} successful")
-        self.logger.info(f"Processing rate: {rate:.1f} contracts/sec")
+        self.logger.info(f"Parallel offchain submission complete: {successful}/{total} successful in {duration:.2f}s")
+        self.logger.info(f"Final processing rate: {final_rate:.1f} contracts/sec")
         
         if failed_contracts and len(failed_contracts) < total * 0.1:  # If < 10% failed, retry them
             self.logger.info(f"Retrying {len(failed_contracts)} failed contracts sequentially...")
