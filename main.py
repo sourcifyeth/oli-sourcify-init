@@ -147,6 +147,8 @@ def main():
         print(f"   Batch size: {config['batch_size']:,}")
         print(f"   Estimated batches: {estimated_batches:,}")
         print(f"   Estimated time: {estimated_hours:.1f} hours")
+        print(f"   Network: {'Base Mainnet (PRODUCTION)' if config['use_production'] else 'Base Sepolia (TESTNET)'}")
+        print(f"   Attestation address: {submitter.oli.address}")
         
         # Final confirmation
         print(f"\n🎯 Ready to process all contracts!")

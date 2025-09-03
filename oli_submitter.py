@@ -61,6 +61,11 @@ class OLISubmitter:
         self.oli = OLI(private_key=private_key, is_production=is_production)
         self.is_production = is_production
         self.logger = self._setup_logger()
+
+        # Log the attestation address for verification
+        network = "Base Mainnet" if is_production else "Base Sepolia Testnet"
+        self.logger.info(f"OLI Client initialized for {network}")
+        self.logger.info(f"Attestation address: {self.oli.address}")
         
     def _setup_logger(self) -> logging.Logger:
         """Setup logging configuration."""
