@@ -67,6 +67,9 @@ def print_config_summary(config: Dict[str, Any]):
     print(f"   Batch size: {config['batch_size']:,} contracts")
     print(f"   Submission delay: {config['submission_delay']}s")
     print(f"   Submission type: {'Onchain (costs gas)' if config['submit_onchain'] else 'Offchain (free)'}")
+    if not config['submit_onchain']:
+        max_workers = int(os.getenv('MAX_PARALLEL_WORKERS', '10'))
+        print(f"   Parallel workers: {max_workers} (offchain only)")
     print(f"   Data directory: {config['data_dir']}")
 
 

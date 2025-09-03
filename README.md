@@ -77,6 +77,7 @@ Shows data statistics, join results, and OLI tag preview.
 - `DEFAULT_BATCH_SIZE="5000"` - Contracts per batch (default: 1000)  
 - `SUBMISSION_DELAY="0.5"` - Delay between submissions in seconds (default: 1.0)
 - `SUBMIT_ONCHAIN="true"` - Submit onchain (costs gas, default: false)
+- `MAX_PARALLEL_WORKERS="20"` - Parallel workers for offchain submissions (default: 10)
 - `DATA_DIR="./my_data"` - Data directory path (default: ./sourcify_data)
 
 ## Production Usage

@@ -236,8 +236,11 @@ class OLISubmitter:
         if submit_onchain and total > 1:
             # Use efficient batch onchain submission for multiple contracts
             return self._submit_batch_onchain(contracts_df)
+        elif not submit_onchain and total > 1:
+            # Use parallel processing for offchain submissions
+            return self._submit_batch_parallel_offchain(contracts_df, delay)
         else:
-            # Use individual submissions for offchain or single contracts
+            # Use individual submissions for single contracts
             return self._submit_batch_individual(contracts_df, submit_onchain, delay)
     
     def _submit_batch_onchain(self, contracts_df: pd.DataFrame) -> Tuple[int, int]:
@@ -297,6 +300,83 @@ class OLISubmitter:
             # Fallback to individual submissions
             self.logger.info("Falling back to individual submissions...")
             return self._submit_batch_individual(contracts_df, True, 1.0)
+    
+    def _submit_batch_parallel_offchain(self, contracts_df: pd.DataFrame, delay: float) -> Tuple[int, int]:
+        """
+        Submit batch of contracts using parallel offchain submissions.
+        
+        Args:
+            contracts_df: DataFrame with contract data
+            delay: Delay between batch chunks (not individual submissions)
+            
+        Returns:
+            Tuple of (successful_count, total_count)
+        """
+        import concurrent.futures
+        import time
+        
+        total = len(contracts_df)
+        # Configurable max workers (default 10, reasonable for most APIs)
+        max_workers = min(
+            int(os.getenv('MAX_PARALLEL_WORKERS', '10')), 
+            total
+        )
+        
+        self.logger.info(f"Submitting {total} contracts with {max_workers} parallel workers")
+        
+        successful = 0
+        failed_contracts = []
+        
+        def submit_single_offchain(contract_data):
+            """Submit a single contract offchain."""
+            try:
+                return self.submit_contract(contract_data, submit_onchain=False)
+            except Exception as e:
+                self.logger.error(f"Parallel submission error for {contract_data.get('address', 'unknown')}: {e}")
+                return False
+        
+        start_time = time.time()
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all contracts in parallel
+            future_to_contract = {
+                executor.submit(submit_single_offchain, row.to_dict()): idx
+                for idx, row in contracts_df.iterrows()
+            }
+            
+            # Process completed submissions
+            for future in concurrent.futures.as_completed(future_to_contract):
+                contract_idx = future_to_contract[future]
+                try:
+                    if future.result():
+                        successful += 1
+                    else:
+                        failed_contracts.append(contract_idx)
+                except Exception as e:
+                    failed_contracts.append(contract_idx)
+                    self.logger.error(f"Exception in parallel submission: {e}")
+                
+                # Progress reporting
+                completed = successful + len(failed_contracts)
+                if completed % 50 == 0 or completed == total:
+                    self.logger.info(f"Progress: {completed}/{total} contracts "
+                                   f"({successful} successful, {len(failed_contracts)} failed)")
+        
+        duration = time.time() - start_time
+        rate = total / duration if duration > 0 else 0
+        
+        self.logger.info(f"Parallel offchain submission complete: {successful}/{total} successful")
+        self.logger.info(f"Processing rate: {rate:.1f} contracts/sec")
+        
+        if failed_contracts and len(failed_contracts) < total * 0.1:  # If < 10% failed, retry them
+            self.logger.info(f"Retrying {len(failed_contracts)} failed contracts sequentially...")
+            failed_df = contracts_df.iloc[failed_contracts]
+            retry_successful, retry_total = self._submit_batch_individual(
+                failed_df, submit_onchain=False, delay=delay
+            )
+            successful += retry_successful
+        
+        return successful, total
     
     def _submit_batch_individual(self, contracts_df: pd.DataFrame, submit_onchain: bool, 
                                 delay: float) -> Tuple[int, int]:
