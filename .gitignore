@@ -30,3 +30,5 @@ Thumbs.db
 
 # Downloaded parquet files
 sourcify_data
+oli_state/**
+.DS_Store
