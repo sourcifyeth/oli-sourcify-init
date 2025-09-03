@@ -124,7 +124,7 @@ def test_oli_data_generation(processor: LocalSourcifyProcessor) -> bool:
         required_oli_columns = [
             'address', 'chain_id', 'source_code_verified', 'is_contract',
             'code_language', 'code_compiler', 'deployment_block', 
-            'deployment_tx', 'deployer_address'
+            'deployment_tx', 'deployer_address', 'contract_name'
         ]
         
         missing_columns = [col for col in required_oli_columns if col not in batch.columns]
@@ -231,7 +231,8 @@ def test_oli_submitter_integration(processor: LocalSourcifyProcessor) -> bool:
             'code_compiler': first_contract.get('code_compiler'),
             'deployment_block': int(first_contract['deployment_block']) if first_contract.get('deployment_block') else None,
             'deployment_tx': first_contract.get('deployment_tx'),
-            'deployer_address': first_contract.get('deployer_address')
+            'deployer_address': first_contract.get('deployer_address'),
+            'contract_name': first_contract.get('contract_name')
         }
         
         # Validate tag format  
@@ -239,7 +240,7 @@ def test_oli_submitter_integration(processor: LocalSourcifyProcessor) -> bool:
         valid_tags = oli_submitter.validate_submission(first_contract.get('address'), oli_chain_id, oli_tags)
         
         print(f"✓ OLI tag validation successful")
-        print(f"   Valid tags: {sum(1 for v in oli_tags.values() if v is not None)}/7")
+        print(f"   Valid tags: {sum(1 for v in oli_tags.values() if v is not None)}/8")
         print(f"   Sample contract: {first_contract.get('address')} (Chain: {first_contract.get('chain_id')})")
         
         return True

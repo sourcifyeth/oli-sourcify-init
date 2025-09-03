@@ -352,7 +352,8 @@ class LocalSourcifyProcessor:
                     'code_compiler': row.get('code_compiler'),
                     'deployment_block': int(row['deployment_block']) if pd.notna(row.get('deployment_block')) else None,
                     'deployment_tx': row.get('deployment_tx'),
-                    'deployer_address': row.get('deployer_address')
+                    'deployer_address': row.get('deployer_address'),
+                    'contract_name': row.get('contract_name')
                 }
                 
                 contract_info = {
@@ -489,7 +490,7 @@ def main():
                 print(f"     Language: {contract['oli_tags']['code_language']}")
                 print(f"     Compiler: {contract['oli_tags']['code_compiler']}")
                 complete_tags = sum(1 for v in contract['oli_tags'].values() if v is not None)
-                print(f"     Complete tags: {complete_tags}/7")
+                print(f"     Complete tags: {complete_tags}/8")
         else:
             print(f"   Error: {preview.get('error', 'Unknown error')}")
             

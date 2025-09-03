@@ -131,6 +131,11 @@ class OLISubmitter:
             if len(deployer) == 42 and deployer.startswith('0x'):  # Valid address format
                 tags["deployer_address"] = deployer
                 
+        if contract_data.get('contract_name') and pd.notna(contract_data['contract_name']):
+            contract_name = str(contract_data['contract_name']).strip()
+            if contract_name:  # Only include if non-empty after stripping
+                tags["contract_name"] = contract_name
+                
         return tags
         
     def validate_submission(self, address: str, chain_id: str, tags: Dict) -> bool:

@@ -13,6 +13,7 @@ Push verified smart contract labels from Sourcify to the Open Labels Initiative 
 - `deployment_block`: deployment block number
 - `deployment_tx`: deployment transaction hash
 - `deployer_address`: deployer address
+- `contract_name`: contract name from compilation metadata
 
 ## Quick Start
 
