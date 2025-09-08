@@ -275,12 +275,13 @@ class LocalSourcifyProcessor:
             self.logger.error(f"Failed to process batch at offset {offset}: {e}")
             raise
             
-    def process_all_contracts(self, batch_size: int = 100000) -> Iterator[pd.DataFrame]:
+    def process_all_contracts(self, batch_size: int = 100000, start_offset: int = 0) -> Iterator[pd.DataFrame]:
         """
         Iterator to process all contracts in batches.
         
         Args:
             batch_size: Size of each batch
+            start_offset: Starting offset to resume from (useful for resuming processing)
             
         Yields:
             DataFrames containing contract batches ready for OLI
@@ -308,9 +309,12 @@ class LocalSourcifyProcessor:
             self.logger.warning("No contracts found to process")
             return
             
-        # Process in batches
-        offset = 0
-        batch_num = 0
+        # Process in batches starting from the specified offset
+        offset = start_offset
+        batch_num = 0 if start_offset == 0 else start_offset // batch_size
+        
+        if start_offset > 0:
+            self.logger.info(f"Resuming processing from offset {start_offset:,} (batch {batch_num + 1})")
         
         while offset < total_result:
             batch_num += 1

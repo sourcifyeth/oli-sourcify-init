@@ -161,6 +161,19 @@ def main():
         checkpoint = submitter.load_checkpoint()
         remaining_contracts = total_processable - state_stats.get('successful', 0)
         
+        # Calculate resume offset from checkpoint
+        resume_offset = 0
+        if checkpoint:
+            # Resume from the checkpoint offset minus one batch to be safe
+            checkpoint_offset = checkpoint.get('offset', 0)
+            batch_size_from_checkpoint = checkpoint.get('batch_size', config['batch_size'])
+            resume_offset = max(0, checkpoint_offset - batch_size_from_checkpoint)
+            if resume_offset > 0:
+                remaining_contracts = total_processable - resume_offset
+                print(f"\n🔄 Will resume from offset {resume_offset:,} (one batch before checkpoint for safety)")
+            else:
+                remaining_contracts = total_processable
+        
         # Estimate processing time for remaining contracts
         estimated_batches = (remaining_contracts + config['batch_size'] - 1) // config['batch_size']
         estimated_time_sec = estimated_batches * config['submission_delay']
@@ -178,27 +191,27 @@ def main():
         if checkpoint:
             print(f"\n🔄 Resumable checkpoint found:")
             print(f"   Previous batch: {checkpoint['batch_num']}/{checkpoint['total_batches']}")
-            print(f"   Can resume from where you left off")
-        
-        # Final confirmation
-        print(f"\n🎯 Ready to process all contracts!")
-        try:
-            response = input("Start processing? [y/N]: ").lower().strip()
-            if response not in ['y', 'yes']:
-                print("Processing cancelled.")
+            print(f"   Automatically resuming from where you left off...")
+        else:
+            # Only ask for confirmation if starting fresh
+            print(f"\n🎯 Ready to process all contracts!")
+            try:
+                response = input("Start processing? [y/N]: ").lower().strip()
+                if response not in ['y', 'yes']:
+                    print("Processing cancelled.")
+                    sys.exit(0)
+            except (KeyboardInterrupt, EOFError):
+                print("\nProcessing cancelled.")
                 sys.exit(0)
-        except (KeyboardInterrupt, EOFError):
-            print("\nProcessing cancelled.")
-            sys.exit(0)
         
         # Main processing loop
         print(f"\n🔄 Starting batch processing...")
         print("=" * 60)
         
-        batch_num = 0
+        batch_num = resume_offset // config['batch_size'] if resume_offset > 0 else 0
         start_time = time.time()
         
-        for batch in processor.process_all_contracts(batch_size=config['batch_size']):
+        for batch in processor.process_all_contracts(batch_size=config['batch_size'], start_offset=resume_offset):
             # Check for shutdown signal before processing batch
             if submitter.shutdown_requested:
                 print(f"\n🛑 Shutdown requested - stopping gracefully after batch {batch_num}")
@@ -210,7 +223,8 @@ def main():
             
             # Save checkpoint before processing batch
             estimated_total_batches = (total_processable + config['batch_size'] - 1) // config['batch_size']
-            submitter.save_checkpoint(batch_num, estimated_total_batches, config['batch_size'], (batch_num - 1) * config['batch_size'])
+            current_offset = resume_offset + (batch_num - (resume_offset // config['batch_size'])) * config['batch_size']
+            submitter.save_checkpoint(batch_num, estimated_total_batches, config['batch_size'], current_offset)
             
             # Submit batch to OLI
             batch_start = time.time()

@@ -758,11 +758,7 @@ class OLISubmitter:
             try:
                 with open(checkpoint_file, 'r') as f:
                     checkpoint = json.load(f)
-                    # Check if checkpoint is recent (within 24 hours)
-                    if time.time() - checkpoint['timestamp'] < 24 * 3600:
-                        return checkpoint
-                    else:
-                        self.logger.info("Checkpoint is older than 24 hours, starting fresh")
+                    return checkpoint
             except Exception as e:
                 self.logger.warning(f"Failed to load checkpoint: {e}")
         return None
